@@ -1,6 +1,12 @@
 # Llamabox Extension
 <img src="images/icon.png" alt="Llamabox Extension Logo" width="48" height="48">
 
+[![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-Available-green?logo=microsoftedge)](https://microsoftedge.microsoft.com/addons/detail/wsl-extension/hpiplomiidmdoinjehejodllhfebfpin)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-green?logo=googlechrome)](https://chromewebstore.google.com/detail/wsl-extension/pnacpjdfeppjbieffibapdpgpelcgkdl?authuser=0&hl=en)
+
+
+**Get Started:** Install Llamabox Extension directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/wsl-extension/pnacpjdfeppjbieffibapdpgpelcgkdl?authuser=0&hl=en) or [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/wsl-extension/hpiplomiidmdoinjehejodllhfebfpin).
+
 ## Overview
 
 Llamabox Extension is a lightweight browser extension designed to help you capture valuable web content quickly and efficiently. Whether you need to save a selected snippet or extract the main article content from a page using Mozilla's Readability, Llamabox Extension streamlines the process with a simple click or keyboard shortcut.
