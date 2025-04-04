@@ -41,6 +41,12 @@ function showToast(message, type = 'info') {
     // Fade out and remove after 2 seconds
     setTimeout(() => {
         toast.style.opacity = '0';
-        setTimeout(() => document.body.removeChild(toast), 500);
+        setTimeout(() => {
+            try {
+                document.body.removeChild(toast);
+            } catch (error) {
+                // Ignore
+            }
+        }, 500);
     }, 2000);
 }

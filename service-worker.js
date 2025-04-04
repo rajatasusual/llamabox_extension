@@ -115,7 +115,7 @@ class DataSyncManager {
     static async checkAlarmState() {
         const alarm = await chrome.alarms.get("sendStoredData");
         if (!alarm) {
-            await chrome.alarms.create("sendStoredData", { periodInMinutes: 1 });
+            await chrome.alarms.create("sendStoredData", { periodInMinutes: 0.5 });
         }
     }
 }
