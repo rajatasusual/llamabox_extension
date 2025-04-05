@@ -45,8 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
                 })
-                .catch(error => {
-                    console.error("Error checking host IP:", error);
+                .catch(_ => {
                     saveButton.innerHTML = 'Save';
                     saveButton.disabled = false;
                     showToast("Error checking host IP.", "error");

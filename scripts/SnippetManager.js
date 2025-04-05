@@ -1,4 +1,11 @@
 class SnippetManager {
+
+    constructor() {
+        (async () => {
+            const state = await chrome.storage.sync.get("enabled");
+            this.toggleListener(state);
+        })();
+    }
     saveSnippet(snippetData) {
         chrome.storage.local.get('snippets', (result) => {
             let snippets = result.snippets || [];
@@ -29,10 +36,10 @@ class SnippetManager {
     }
 
     toggleListener(state) {
-        if (state) {
+        if (state && state.enabled) {
             document.addEventListener('mouseup', this.handleMouseUp, true);
             console.log('Mouseup listener added.');
-        } else if (!state) {
+        } else if (!state.enabled) {
             document.removeEventListener('mouseup', this.handleMouseUp, true);
             console.log('Mouseup listener removed.');
         }
@@ -41,7 +48,7 @@ class SnippetManager {
 
 const snippetManager = new SnippetManager();
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     if (message.toggleListener !== undefined) {
         snippetManager.toggleListener(!!message.toggleListener);
         sendResponse({ status: 'done' });

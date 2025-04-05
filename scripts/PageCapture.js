@@ -35,7 +35,7 @@ class PageCapture {
 
             const pageData = this.createPageData(article);
             await this.saveToStorage(pageData);
-            
+
             console.log('Page content saved:', pageData);
             showToast("Page content captured!");
 
@@ -49,7 +49,7 @@ class PageCapture {
 const pageCapture = new PageCapture();
 
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     if (message.action === "capturePage") {
         pageCapture.captureReadableContent();
         sendResponse({ status: 'done' });

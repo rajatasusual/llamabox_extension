@@ -122,7 +122,7 @@ class DataSyncManager {
 
 // Extension Controller
 class ExtensionController {
-    static async toggleExtension(tabId) {
+    static async toggleExtension() {
         const prevState = await StatusManager.getState();
         const nextState = !prevState.enabled;
 
@@ -179,7 +179,7 @@ class ExtensionController {
                 continue;
             }
             const state = await StatusManager.getState();
-            chrome.tabs.sendMessage(tab.id, { refreshActive: { state } }, (response) => {
+            chrome.tabs.sendMessage(tab.id, { refreshActive: { state } }, (_) => {
                 if (chrome.runtime.lastError) {
                     // This error indicates that the content script isn't present in the tab.
                     console.warn(`Tab ${tab.id} did not receive the message: ${chrome.runtime.lastError.message}`);
@@ -191,18 +191,23 @@ class ExtensionController {
     }
 }
 
-
-// Event Listeners
-chrome.runtime.onInstalled.addListener(async () => {
+function init() {
     StatusManager.setState(null);
     ExtensionController.updateTooltip();
     DataSyncManager.checkAlarmState();
     ExtensionController.reinjectContentScript();
+}
+
+// Event Listeners
+chrome.runtime.onInstalled.addListener(async () => {
     
+    init();
     chrome.runtime.openOptionsPage();
 
     console.log("Extension installed.");
 });
+
+chrome.runtime.onStartup.addListener(init);
 
 chrome.commands.onCommand.addListener(async (command, tab) => {
     if (command === "toggle-extension") {
@@ -215,14 +220,14 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
     }
 });
 
-chrome.action.onClicked.addListener(async (tab) => {
+chrome.action.onClicked.addListener(async (_) => {
     const hostIp = await StatusManager.getHostIp();
     //open options page if hostIp is not set
     if (!hostIp.hostIp) {
         chrome.runtime.openOptionsPage();
         return;
     }
-    ExtensionController.toggleExtension(tab.id);
+    ExtensionController.toggleExtension();
 });
 
 chrome.alarms.onAlarm.addListener(alarm => {
@@ -232,9 +237,9 @@ chrome.alarms.onAlarm.addListener(alarm => {
 });
 
 //listen to host IP changes
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     if (message.hostIpChanged) {
-        StatusManager.getHostIp().then(async (hostIp) => {
+        StatusManager.getHostIp().then(async (_) => {
             // Also update the badge if necessary.
             BadgeManager.updateBadge();
 
