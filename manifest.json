@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Llamabox Extension",
-    "version": "1.0",
+    "version": "1.1.0",
     "description": "Captures snippets or entire webpage content.",
     "permissions": [
         "activeTab",
