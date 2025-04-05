@@ -7,7 +7,6 @@ const BADGE_COLORS = {
 
 class BadgeManager {
     static async updateBadge() {
-
         const setBadge = async (text, color) => {
             await chrome.action.setBadgeText({ text });
             await chrome.action.setBadgeBackgroundColor({ color });
@@ -23,8 +22,8 @@ class BadgeManager {
         }
 
         await setBadge(
-            state.enabled ? "ON" : "OFF",
-            state.enabled ? BADGE_COLORS.ON : BADGE_COLORS.OFF
+            state ? "ON" : "OFF",
+            state ? BADGE_COLORS.ON : BADGE_COLORS.OFF
         );
     }
 }
@@ -33,27 +32,22 @@ class BadgeManager {
 class StatusManager {
     static async setState(state) {
         if (state === null) {
-            state = await this.getState();
-            if (state.enabled === undefined) {
-                StatusManager.setState(false);
-            } else {
-                StatusManager.setState(state.enabled);
-            }
-            return;
+            const { enabled = false } = await chrome.storage.sync.get("enabled");
+            state = enabled;
         }
+
         await chrome.storage.sync.set({ enabled: state });
         BadgeManager.updateBadge();
-
         console.log(`State set to: ${state}`);
     }
 
     static async getState() {
-        return await chrome.storage.sync.get("enabled");
+        const { enabled = false } = await chrome.storage.sync.get("enabled");
+        return enabled;
     }
 
     static async getHostIp() {
-        const result = await chrome.storage.sync.get("hostIp");
-        return result;
+        return await chrome.storage.sync.get("hostIp");
     }
 }
 
@@ -68,6 +62,7 @@ class APIService {
 
         const API_BASE_URL = `http://${result.hostIp}:5000`;
         console.log(`Sending data to ${API_BASE_URL}/${endpoint}`);
+
         try {
             const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
                 method: "POST",
@@ -85,30 +80,36 @@ class APIService {
             console.error(`Error sending ${endpoint}:`, error);
             return false;
         }
-
     }
 }
 
 // Data Sync Manager
 class DataSyncManager {
+    static isSending = false;
+
     static async sendStoredData() {
-        const { snippets = [], capturedPages = [] } = await chrome.storage.local.get([
-            "snippets",
-            "capturedPages"
-        ]);
+        if (DataSyncManager.isSending) return;
+        DataSyncManager.isSending = true;
 
-        if (snippets.length > 0) {
-            const success = await APIService.sendData('snippet', snippets);
-            if (success) await chrome.storage.local.set({ snippets: [] });
-            else
-                console.warn("Failed to send snippets. Retaining in storage.");
-        }
+        try {
+            const { snippets = [], capturedPages = [] } = await chrome.storage.local.get([
+                "snippets",
+                "capturedPages"
+            ]);
 
-        if (capturedPages.length > 0) {
-            const success = await APIService.sendData('page', capturedPages);
-            if (success) await chrome.storage.local.set({ capturedPages: [] });
-            else
-                console.warn("Failed to send captured pages. Retaining in storage.");
+            if (snippets.length > 0) {
+                const success = await APIService.sendData('snippet', snippets);
+                if (success) await chrome.storage.local.set({ snippets: [] });
+                else console.warn("Failed to send snippets. Retaining in storage.");
+            }
+
+            if (capturedPages.length > 0) {
+                const success = await APIService.sendData('page', capturedPages);
+                if (success) await chrome.storage.local.set({ capturedPages: [] });
+                else console.warn("Failed to send captured pages. Retaining in storage.");
+            }
+        } finally {
+            DataSyncManager.isSending = false;
         }
     }
 
@@ -124,11 +125,10 @@ class DataSyncManager {
 class ExtensionController {
     static async toggleExtension() {
         const prevState = await StatusManager.getState();
-        const nextState = !prevState.enabled;
+        const nextState = !prevState;
 
         await StatusManager.setState(nextState);
-
-       await this.updateAllTabs();
+        await this.updateAllTabs();
     }
 
     static captureFullPage(tab) {
@@ -146,6 +146,7 @@ class ExtensionController {
             chrome.action.setTitle({ title: message });
             return;
         }
+
         const commands = await chrome.commands.getAll();
         const tooltipText = commands
             .filter(cmd => cmd.shortcut)
@@ -164,24 +165,30 @@ class ExtensionController {
                     continue;
                 }
                 const target = { tabId: tab.id, allFrames: cs.all_frames };
-                if (cs.js[0]) chrome.scripting.executeScript({
-                    files: cs.js,
-                    injectImmediately: cs.run_at === 'document_start',
-                    world: cs.world, // requires Chrome 111+
-                    target,
-                });
+                if (cs.js && cs.js.length > 0) {
+                    for (const file of cs.js) {
+                        chrome.scripting.executeScript({
+                            files: [file],
+                            injectImmediately: cs.run_at === 'document_start',
+                            world: cs.world,
+                            target,
+                        });
+                    }
+                }
             }
         }
     }
+
     static async updateAllTabs() {
+        const state = await StatusManager.getState();
+
         for (const tab of await chrome.tabs.query({ url: "<all_urls>" })) {
             if (tab.url.match(/(chrome|chrome-extension|edge|extension):\/\//gi)) {
                 continue;
             }
-            const state = await StatusManager.getState();
+
             chrome.tabs.sendMessage(tab.id, { refreshActive: { state } }, (_) => {
                 if (chrome.runtime.lastError) {
-                    // This error indicates that the content script isn't present in the tab.
                     console.warn(`Tab ${tab.id} did not receive the message: ${chrome.runtime.lastError.message}`);
                 } else {
                     console.log(`Tab ${tab.id} updated successfully.`);
@@ -191,6 +198,7 @@ class ExtensionController {
     }
 }
 
+// Initialization
 function init() {
     StatusManager.setState(null);
     ExtensionController.updateTooltip();
@@ -200,10 +208,8 @@ function init() {
 
 // Event Listeners
 chrome.runtime.onInstalled.addListener(async () => {
-    
     init();
     chrome.runtime.openOptionsPage();
-
     console.log("Extension installed.");
 });
 
@@ -214,7 +220,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
         ExtensionController.toggleExtension();
     } else if (command === "capture-page") {
         const state = await StatusManager.getState();
-        if (state.enabled) {
+        if (state) {
             ExtensionController.captureFullPage(tab);
         }
     }
@@ -222,7 +228,6 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
 
 chrome.action.onClicked.addListener(async (_) => {
     const hostIp = await StatusManager.getHostIp();
-    //open options page if hostIp is not set
     if (!hostIp.hostIp) {
         chrome.runtime.openOptionsPage();
         return;
@@ -236,17 +241,12 @@ chrome.alarms.onAlarm.addListener(alarm => {
     }
 });
 
-//listen to host IP changes
 chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     if (message.hostIpChanged) {
         StatusManager.getHostIp().then(async (_) => {
-            // Also update the badge if necessary.
             BadgeManager.updateBadge();
-
-            // Send a response if needed.
             sendResponse({ status: "Host IP updated across all tabs." });
         });
-        // Return true to indicate asynchronous response.
         return true;
     }
 });

@@ -36,10 +36,10 @@ class SnippetManager {
     }
 
     toggleListener(state) {
-        if (state && state.enabled) {
+        if (state) {
             document.addEventListener('mouseup', this.handleMouseUp, true);
             console.log('Mouseup listener added.');
-        } else if (!state.enabled) {
+        } else if (!state) {
             document.removeEventListener('mouseup', this.handleMouseUp, true);
             console.log('Mouseup listener removed.');
         }
