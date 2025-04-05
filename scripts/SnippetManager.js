@@ -2,8 +2,8 @@ class SnippetManager {
 
     constructor() {
         (async () => {
-            const state = await chrome.storage.sync.get("enabled");
-            this.toggleListener(state);
+            const { enabled = false } = await chrome.storage.sync.get("enabled");
+            this.toggleListener(enabled);
         })();
     }
     saveSnippet(snippetData) {
