@@ -39,9 +39,13 @@ class SnippetManager {
         if (state) {
             document.addEventListener('mouseup', this.handleMouseUp, true);
             console.log('Mouseup listener added.');
+            injectBlinkingLogo();
+            injectCustomSelectionStyle();
         } else if (!state) {
             document.removeEventListener('mouseup', this.handleMouseUp, true);
             console.log('Mouseup listener removed.');
+            removeBlinkingLogo();
+            removeCustomSelectionStyle();
         }
     }
 }
@@ -53,7 +57,7 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
         snippetManager.toggleListener(!!message.toggleListener);
         sendResponse({ status: 'done' });
     }
-    if (message.refreshActive){
+    if (message.refreshActive) {
         snippetManager.toggleListener(message.refreshActive.state);
         sendResponse({ status: 'done' });
     }

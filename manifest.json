@@ -35,6 +35,16 @@
             ]
         }
     ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "images/icon.png"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
     "commands": {
         "toggle-extension": {
             "suggested_key": {

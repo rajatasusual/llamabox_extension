@@ -50,3 +50,52 @@ function showToast(message, type = 'info') {
         }, 500);
     }, 2000);
 }
+
+function injectBlinkingLogo() {
+    // Prevent multiple injections
+    if (document.querySelector('[data-blinking-logo]')) return;
+
+    const img = document.createElement('img');
+    img.src = chrome.runtime.getURL('../images/icon.png');
+    img.setAttribute('data-blinking-logo', 'true');
+    img.style.position = 'fixed';
+    img.style.top = '10px';
+    img.style.right = '10px';
+    img.style.width = '32px';
+    img.style.height = '32px';
+    img.style.zIndex = '9999';
+    img.style.animation = 'blink-animation 3s infinite';
+    img.style.pointerEvents = 'none';
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes blink-animation {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(img);
+}
+
+function removeBlinkingLogo() {
+    const logo = document.querySelector('[data-blinking-logo]');
+    if (logo) logo.remove();
+}
+
+function injectCustomSelectionStyle() {
+    const style = document.createElement('style');
+    style.setAttribute('data-selection-style', 'true');
+    style.textContent = `
+        ::selection {
+            background: #ACE2F9 !important; /* Light blue */
+            color: black !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function removeCustomSelectionStyle() {
+    const style = document.querySelector('[data-selection-style]');
+    if (style) style.remove();
+}
